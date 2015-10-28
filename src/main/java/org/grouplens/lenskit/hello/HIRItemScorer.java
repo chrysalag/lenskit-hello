@@ -106,7 +106,7 @@ public class HIRItemScorer extends AbstractItemScorer {
                 coratingsVector = model.getCoratingsVector(prefKey);
                 coratingsVector.multiply(directAssociation);
 
-                proximityVector = model.getProximityVector(prefKey, items);
+                proximityVector = model.getProximityVector(prefKey, idao.getItemIds());
                 proximityVector.multiply(proximity);
 
                 coratingsVector.add(proximityVector);
@@ -116,19 +116,22 @@ public class HIRItemScorer extends AbstractItemScorer {
             }
         }
 
-        for (VectorEntry e: preferenceVector.fast()) {
-            long key = e.getKey();
-            if (!historyVector.containsKey(key)) {
-                results.add(Results.create(key, e.getValue()));
+        if (preferenceVector.sum() < 1.1 || preferenceVector.sum() > 0.9) {
+            for (VectorEntry e : preferenceVector.fast()) {
+                long key = e.getKey();
+                if (!historyVector.containsKey(key)) {
+                    results.add(Results.create(key, e.getValue()));
+                }
             }
         }
 
-        assert !results.isEmpty();
-
-        return Results.newResultMap(results);
+        if (results.size() == (idao.getItemIds().size() - historyVector.size())) {
+            return Results.newResultMap(results);
+        } else {
+            List<Result> result = new ArrayList<>();
+            return Results.newResultMap(result);
+        }
     }
 
-    public HIRModel getModel() {
-        return model;
-    }
+    public HIRModel getModel() { return model; }
 }

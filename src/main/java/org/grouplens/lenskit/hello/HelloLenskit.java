@@ -88,8 +88,6 @@ public class HelloLenskit implements Runnable {
             throw new RuntimeException("cannot load names", g);
         }
 
-        System.out.format("\t%d \n", genres.getGenreSize());
-
         // Next: load the LensKit algorithm configuration
         LenskitConfiguration config = null;
         try {
@@ -101,7 +99,7 @@ public class HelloLenskit implements Runnable {
         config.addComponent(dao);
         config.bind(EventDAO.class).to(dao);
         config.bind(MapItemGenreDAO.class).to(genres);
-        config.bind(PreferenceDomain.class).to(new PreferenceDomain(0, 5));
+        config.bind(PreferenceDomain.class).to(new PreferenceDomain(0, 1));
 
         // Now that we have a configuration, build a recommender engine from the configuration
         // and data source. This will compute the similarity matrix and return a recommender
@@ -116,11 +114,12 @@ public class HelloLenskit implements Runnable {
             // for users
             for (long user : users) {
                 // get 10 recommendation for the user
-                List<Result> recs = irec.recommendWithDetails(user, 10, null, null);
+                List<Result> recs = irec.recommendWithDetails(user, 20, null, null);
                 System.out.format("Recommendations for user %d:\n", user);
                 for (Result item : recs) {
                     String name = names.getItemName(item.getId());
-                    System.out.format("\t%d (%s): %.2f\n", item.getId(), name, item.getScore());
+                    //System.out.format("\t%d (%s): %.2f\n", item.getId(), name, item.getScore());
+                    System.out.format("\t %s \n", name);
                 }
             }
         }
