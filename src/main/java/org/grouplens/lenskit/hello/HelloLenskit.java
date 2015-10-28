@@ -22,7 +22,6 @@
 package org.grouplens.lenskit.hello;
 
 import org.lenskit.LenskitRecommenderEngine;
-import org.lenskit.api.RecommenderBuildException;
 import org.lenskit.LenskitConfiguration;
 import org.lenskit.config.ConfigHelpers;
 import org.lenskit.data.dao.EventDAO;
@@ -30,20 +29,15 @@ import org.lenskit.data.dao.ItemNameDAO;
 import org.lenskit.data.dao.MapItemNameDAO;
 import org.grouplens.lenskit.data.text.Formats;
 import org.grouplens.lenskit.data.text.TextEventDAO;
-import org.grouplens.lenskit.transform.normalize.BaselineSubtractingUserVectorNormalizer;
-import org.grouplens.lenskit.transform.normalize.UserVectorNormalizer;
 import org.lenskit.LenskitRecommender;
 import org.lenskit.api.*;
-import org.lenskit.baseline.BaselineScorer;
-import org.lenskit.baseline.ItemMeanRatingItemScorer;
-import org.lenskit.baseline.UserMeanBaseline;
-import org.lenskit.baseline.UserMeanItemScorer;
-import org.lenskit.knn.MinNeighbors;
-import org.lenskit.knn.item.ItemItemScorer;
+import org.lenskit.api.Result;
+import org.lenskit.data.ratings.PreferenceDomain;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -56,6 +50,7 @@ public class HelloLenskit implements Runnable {
     public static void main(String[] args) {
         HelloLenskit hello = new HelloLenskit(args);
         try {
+            System.out.println(Arrays.toString(args));
             hello.run();
         } catch (RuntimeException e) {
             System.err.println(e.toString());
@@ -67,13 +62,17 @@ public class HelloLenskit implements Runnable {
     private String delimiter = "\t";
     private File inputFile = new File("data/ratings.csv");
     private File movieFile = new File("data/movies.csv");
+    private File genreFile = new File("data/genres.csv");
+
     private List<Long> users;
 
     public HelloLenskit(String[] args) {
         users = new ArrayList<Long>(args.length);
+        System.out.println(users);
         for (String arg: args) {
             users.add(Long.parseLong(arg));
         }
+        System.out.println(users);
     }
 
     public void run() {
@@ -82,11 +81,21 @@ public class HelloLenskit implements Runnable {
         // a database (see JDBCRatingDAO).
         EventDAO dao = TextEventDAO.create(inputFile, Formats.movieLensLatest());
         ItemNameDAO names;
+        MapItemGenreDAO genres;
+
         try {
             names = MapItemNameDAO.fromCSVFile(movieFile, 1);
         } catch (IOException e) {
             throw new RuntimeException("cannot load names", e);
         }
+
+        try {
+            genres = MapItemGenreDAO.fromCSVFile(genreFile);
+        } catch (IOException g) {
+            throw new RuntimeException("cannot load names", g);
+        }
+
+        System.out.format("\t%d \n", genres.getGenreSize());
 
         // Next: load the LensKit algorithm configuration
         LenskitConfiguration config = null;
@@ -96,8 +105,14 @@ public class HelloLenskit implements Runnable {
             throw new RuntimeException("could not load configuration", e);
         }
         // Add our data component to the configuration
+        //config.bind(ItemScorer.class).to(HIRItemScorer.class);
         config.addComponent(dao);
-
+        config.bind(EventDAO.class).to(dao);
+        config.bind(MapItemGenreDAO.class).to(genres);
+        config.bind(PreferenceDomain.class).to(new PreferenceDomain(0, 5));
+        // factory.setComponent(UserVectorNormalizer.class, IdentityVectorNormalizer.class);
+        //config.bind(BaselineScorer.class, ItemScorer.class).to(UserMeanItemScorer.class);
+        //config.bind(UserMeanBaseline.class, ItemScorer.class).to(ItemMeanRatingItemScorer.class);
 
         // There are more parameters, roles, and components that can be set. See the
         // JavaDoc for each recommender algorithm for more information.
@@ -115,7 +130,7 @@ public class HelloLenskit implements Runnable {
             // for users
             for (long user : users) {
                 // get 10 recommendation for the user
-                ResultList recs = irec.recommendWithDetails(user, 10, null, null);
+                List<Result> recs = irec.recommendWithDetails(user, 10, null, null);
                 System.out.format("Recommendations for user %d:\n", user);
                 for (Result item : recs) {
                     String name = names.getItemName(item.getId());
