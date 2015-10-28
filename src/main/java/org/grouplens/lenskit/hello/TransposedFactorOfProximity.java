@@ -35,8 +35,6 @@ import org.lenskit.data.dao.ItemDAO;
 
 public class TransposedFactorOfProximity {
 
-    private RealMatrix prepareGenreMatrix;
-
     private RealMatrix transposed;
 
     public TransposedFactorOfProximity(ItemDAO dao, ItemGenreDAO gDao) {
@@ -44,17 +42,14 @@ public class TransposedFactorOfProximity {
         int genreSize = gDao.getGenreSize();
         int itemSize = items.size();
 
-        double[][] dataPGM = new double[itemSize][genreSize];
         double[][] dataTransposed = new double[genreSize][itemSize];
 
-        prepareGenreMatrix = MatrixUtils.createRealMatrix(dataPGM);
         transposed = MatrixUtils.createRealMatrix(dataTransposed);
 
         int i = 0;
         LongIterator iter = items.iterator();
         while (iter.hasNext()) {
             long item = iter.nextLong();
-            prepareGenreMatrix.setRow(i, gDao.getItemGenre(item).toArray());
             transposed.setColumn(i, gDao.getItemGenre(item).toArray());
             i++;
         }

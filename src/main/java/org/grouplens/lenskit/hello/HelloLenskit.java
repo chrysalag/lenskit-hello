@@ -50,7 +50,6 @@ public class HelloLenskit implements Runnable {
     public static void main(String[] args) {
         HelloLenskit hello = new HelloLenskit(args);
         try {
-            System.out.println(Arrays.toString(args));
             hello.run();
         } catch (RuntimeException e) {
             System.err.println(e.toString());
@@ -59,7 +58,6 @@ public class HelloLenskit implements Runnable {
         }
     }
 
-    private String delimiter = "\t";
     private File inputFile = new File("data/ratings.csv");
     private File movieFile = new File("data/movies.csv");
     private File genreFile = new File("data/genres.csv");
@@ -67,18 +65,13 @@ public class HelloLenskit implements Runnable {
     private List<Long> users;
 
     public HelloLenskit(String[] args) {
-        users = new ArrayList<Long>(args.length);
-        System.out.println(users);
+        users = new ArrayList<>(args.length);
         for (String arg: args) {
             users.add(Long.parseLong(arg));
         }
-        System.out.println(users);
     }
 
     public void run() {
-        // We first need to configure the data access.
-        // We will use a simple delimited file; you can use something else like
-        // a database (see JDBCRatingDAO).
         EventDAO dao = TextEventDAO.create(inputFile, Formats.movieLensLatest());
         ItemNameDAO names;
         MapItemGenreDAO genres;
@@ -105,17 +98,10 @@ public class HelloLenskit implements Runnable {
             throw new RuntimeException("could not load configuration", e);
         }
         // Add our data component to the configuration
-        //config.bind(ItemScorer.class).to(HIRItemScorer.class);
         config.addComponent(dao);
         config.bind(EventDAO.class).to(dao);
         config.bind(MapItemGenreDAO.class).to(genres);
         config.bind(PreferenceDomain.class).to(new PreferenceDomain(0, 5));
-        // factory.setComponent(UserVectorNormalizer.class, IdentityVectorNormalizer.class);
-        //config.bind(BaselineScorer.class, ItemScorer.class).to(UserMeanItemScorer.class);
-        //config.bind(UserMeanBaseline.class, ItemScorer.class).to(ItemMeanRatingItemScorer.class);
-
-        // There are more parameters, roles, and components that can be set. See the
-        // JavaDoc for each recommender algorithm for more information.
 
         // Now that we have a configuration, build a recommender engine from the configuration
         // and data source. This will compute the similarity matrix and return a recommender
