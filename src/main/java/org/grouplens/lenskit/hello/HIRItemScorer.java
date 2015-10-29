@@ -26,6 +26,8 @@ package org.grouplens.lenskit.hello;
  */
 
 import org.grouplens.lenskit.data.history.RatingVectorUserHistorySummarizer;
+import org.grouplens.lenskit.transform.normalize.DefaultUserVectorNormalizer;
+import org.grouplens.lenskit.transform.normalize.UserVectorNormalizer;
 import org.grouplens.lenskit.vectors.MutableSparseVector;
 import org.grouplens.lenskit.vectors.SparseVector;
 import org.grouplens.lenskit.vectors.VectorEntry;
@@ -55,6 +57,7 @@ public class HIRItemScorer extends AbstractItemScorer {
     protected final PreferenceDomain domain;
     protected double directAssociation;
     protected double proximity;
+    private final UserVectorNormalizer normalizer;
 
     @Inject
     public HIRItemScorer(UserEventDAO dao,
@@ -62,13 +65,15 @@ public class HIRItemScorer extends AbstractItemScorer {
                          ItemDAO idao,
                          @Nullable PreferenceDomain dom,
                          @DirectAssociationParameter double direct,
-                         @ProximityParameter double prox) {
+                         @ProximityParameter double prox,
+                         UserVectorNormalizer norm) {
         this.dao = dao;
         this.model = model;
         this.idao = idao;
         domain = dom;
         directAssociation = direct;
         proximity = prox;
+        normalizer = norm;
     }
 
     @Nonnull
@@ -83,6 +88,10 @@ public class HIRItemScorer extends AbstractItemScorer {
         }
 
         SparseVector historyVector = RatingVectorUserHistorySummarizer.makeRatingVector(history);
+
+        MutableSparseVector historyVec = MutableSparseVector.create(idao.getItemIds());
+
+        normalizer.normalize(user, historyVector, historyVec);
 
         List<Result> results = new ArrayList<>();
 
