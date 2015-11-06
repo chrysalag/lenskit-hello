@@ -21,7 +21,6 @@
 
 package org.grouplens.lenskit.hello;
 
-import it.unimi.dsi.fastutil.longs.LongIterable;
 import it.unimi.dsi.fastutil.longs.LongIterator;
 import it.unimi.dsi.fastutil.longs.LongSet;
 import org.apache.commons.math3.linear.MatrixUtils;
@@ -29,51 +28,60 @@ import org.apache.commons.math3.linear.RealMatrix;
 import org.apache.commons.math3.linear.RealVector;
 import org.lenskit.data.dao.ItemDAO;
 
-import java.util.LinkedHashMap;
-
-/**
- * Created by chrysalag.
- */
-
 public class RowStochasticFactorOfProximity {
-
-    private RealMatrix prepareGenresMatrix;
 
     private RealMatrix rowStochastic;
 
-    public RowStochasticFactorOfProximity(ItemDAO dao, ItemGenreDAO gDao) {
+    private int itemSize;
+
+    /**
+     * Creates a matrix to process genre data and generate the first factor of the proximity
+     * matrix needed for a {@code HIRItemScorer}.
+     *
+     * @param dao    The DataAccessObject interfacing with the item data for the model
+     * @param gDao   The genreDataAccessObject interfacing with the genre data for the model
+     *
+     */
+
+    public RowStochasticFactorOfProximity(ItemDAO dao,
+                                          ItemGenreDAO gDao) {
         LongSet items = dao.getItemIds();
-        int itemSize = items.size();
         int genreSize = gDao.getGenreSize();
+        itemSize = items.size();
 
         double[][] data = new double[itemSize][genreSize];
 
-        prepareGenresMatrix = MatrixUtils.createRealMatrix(data);
         rowStochastic = MatrixUtils.createRealMatrix(data);
 
         int i = 0;
         LongIterator iter = items.iterator();
         while (iter.hasNext()) {
             long item = iter.nextLong();
-            prepareGenresMatrix.setRowVector(i, gDao.getItemGenre(item));
+            rowStochastic.setRowVector(i, gDao.getItemGenre(item));
             i++;
         }
     }
 
-    public RealMatrix RowStochastic() {
-        rowStochastic = prepareGenresMatrix.copy();
+    /**
+     * @return A matrix containing the row stochastic values of the matrix
+     * that contains the information about the item categorization,
+     * to be used by a {@code HIRItemScorer}.
+     */
 
-        int itemSize = rowStochastic.getRowDimension();
+    public RealMatrix RowStochastic() {
 
         for (int i = 0; i < itemSize; i++) {
             RealVector forIter = rowStochastic.getRowVector(i);
+
             double sum = forIter.getL1Norm();
-            RealVector stochasticRow = forIter.mapDivide(sum);
-            double[] row = stochasticRow.toArray();
-            rowStochastic.setRow(i, row);
+
+            if (sum!=0) {
+                forIter.mapDivideToSelf(sum);
+                rowStochastic.setRowVector(i, forIter);
+            }
         }
 
         return rowStochastic;
-    }
 
+    }
 }

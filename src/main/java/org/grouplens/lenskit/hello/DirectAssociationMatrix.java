@@ -21,25 +21,22 @@
 
 package org.grouplens.lenskit.hello;
 
-import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
-import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
-import it.unimi.dsi.fastutil.longs.LongIterator;
 import it.unimi.dsi.fastutil.longs.LongSet;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.commons.math3.linear.MatrixUtils;
+import org.apache.commons.math3.linear.RealMatrix;
+import org.apache.commons.math3.linear.RealVector;
 import org.grouplens.lenskit.vectors.*;
 import org.lenskit.data.dao.ItemDAO;
 
-import java.util.Map;
-
-/**
- * Created by chrysalag. Processes ratings data for HIR Item Scorer.
- */
 public class DirectAssociationMatrix {
 
-    private Long2ObjectMap<MutableSparseVector> workMatrix;
+    private RealMatrix workMatrix;
+
+    private int itemSize;
 
     /**
-     * Creates an accumulator to process rating data and generate the necessary data for
+     * Creates a matrix to process rating data and generate coratings for
      * a {@code HIRItemScorer}.
      *
      * @param dao       The DataAccessObject interfacing with the data for the model
@@ -47,12 +44,8 @@ public class DirectAssociationMatrix {
 
     public DirectAssociationMatrix(ItemDAO dao) {
         LongSet items = dao.getItemIds();
-        workMatrix = new Long2ObjectOpenHashMap<>(items.size());
-        LongIterator iter = items.iterator();
-        while (iter.hasNext()) {
-            long item = iter.nextLong();
-            workMatrix.put(item, MutableSparseVector.create(items));
-        }
+        itemSize = items.size();
+        workMatrix = MatrixUtils.createRealMatrix(itemSize, itemSize);
     }
 
     /**
@@ -63,50 +56,34 @@ public class DirectAssociationMatrix {
      * @param id2      The id of the second item.
      * @param itemVec2 The rating vector of the second item.
      */
-
     public void putItemPair(long id1, SparseVector itemVec1, long id2, SparseVector itemVec2) {
-        if (workMatrix == null) {
-            throw new IllegalStateException("Corratings Data are already computed.");
-        }
 
         if (id1 == id2) {
-            workMatrix.get(id1).set(id2, 0);
-            workMatrix.get(id2).set(id1, 0);
+            workMatrix.setEntry((int) id1, (int) id2, 0);
         } else {
             int coratings = 0;
-            for (Pair<VectorEntry, VectorEntry> pair : Vectors.fastIntersect(itemVec1, itemVec2)) {
+            for (Pair<VectorEntry,VectorEntry> pair: Vectors.fastIntersect(itemVec1, itemVec2)) {
                 coratings++;
             }
-            workMatrix.get(id1).set(id2, coratings);
-            workMatrix.get(id2).set(id1, coratings);
+            workMatrix.setEntry((int) id1, (int) id2, coratings);
         }
     }
 
-        /**
-         * @return A matrix of item corating values to be used by
-         *         a {@code HIRItemScorer}.
-         */
+    /**
+     * @return A matrix of item corating values to be used by
+     *         a {@code HIRItemScorer}.
+     */
+    public RealMatrix buildMatrix() {
 
-        public Long2ObjectMap<ImmutableSparseVector> buildMatrix() {
-
-            if (workMatrix == null) {
-                throw new IllegalStateException("Corratings Data are already computed.");
+        for (int i=0; i<itemSize; i++) {
+            RealVector testRow = workMatrix.getRowVector(i);
+            double testSum = testRow.getL1Norm();
+            if (testSum != 0){
+                testRow.mapDivideToSelf(testSum);
+                workMatrix.setRowVector(i, testRow);
             }
 
-            Long2ObjectMap<ImmutableSparseVector> matrix = new Long2ObjectOpenHashMap<>(workMatrix.size());
-
-            for (MutableSparseVector vec : workMatrix.values()) {
-                double sum = vec.sum();
-                if (sum != 0) {
-                    vec.multiply(1/sum);
-                }
-            }
-
-            for (Map.Entry<Long, MutableSparseVector> e : workMatrix.entrySet()) {
-                matrix.put(e.getKey(), e.getValue().freeze());
-            }
-
-            workMatrix = null;
-            return matrix;
         }
+        return workMatrix;
+    }
 }

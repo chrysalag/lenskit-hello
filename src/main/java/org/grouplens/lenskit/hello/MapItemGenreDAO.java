@@ -46,7 +46,6 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 
 /**
- * Created by chrysalag on 28.10.15.
  * An item genre DAO backed by a map of item IDs to genres.
  *
  * @see org.grouplens.lenskit.hello.ItemGenreDAO

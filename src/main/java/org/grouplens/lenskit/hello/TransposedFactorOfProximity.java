@@ -21,7 +21,6 @@
 
 package org.grouplens.lenskit.hello;
 
-import it.unimi.dsi.fastutil.longs.LongIterable;
 import it.unimi.dsi.fastutil.longs.LongIterator;
 import it.unimi.dsi.fastutil.longs.LongSet;
 import org.apache.commons.math3.linear.MatrixUtils;
@@ -29,17 +28,26 @@ import org.apache.commons.math3.linear.RealMatrix;
 import org.apache.commons.math3.linear.RealVector;
 import org.lenskit.data.dao.ItemDAO;
 
-/**
- * Created by chrysalag.
- */
-
 public class TransposedFactorOfProximity {
 
     private RealMatrix transposed;
 
-    public TransposedFactorOfProximity(ItemDAO dao, ItemGenreDAO gDao) {
+    private int genreSize;
+
+    /**
+     * Creates a matrix to process genre data and generate the second factor of the proximity
+     * matrix needed for a {@code HIRItemScorer}.
+     *
+     * @param dao    The DataAccessObject interfacing with the item data for the model
+     * @param gDao   The genreDataAccessObject interfacing with the genre data for the model
+     *
+     */
+
+    public TransposedFactorOfProximity(ItemDAO dao,
+                                       ItemGenreDAO gDao) {
+
         LongSet items = dao.getItemIds();
-        int genreSize = gDao.getGenreSize();
+        genreSize = gDao.getGenreSize();
         int itemSize = items.size();
 
         double[][] dataTransposed = new double[genreSize][itemSize];
@@ -50,22 +58,30 @@ public class TransposedFactorOfProximity {
         LongIterator iter = items.iterator();
         while (iter.hasNext()) {
             long item = iter.nextLong();
-            transposed.setColumn(i, gDao.getItemGenre(item).toArray());
+            transposed.setColumnVector(i, gDao.getItemGenre(item));
             i++;
         }
     }
 
-    public RealMatrix ColumnStochastic() {
+    /**
+     * @return A matrix containing the row stochastic values of the matrix
+     * that contains the information about the item categorization transposed,
+     * to be used by a {@code HIRItemScorer}.
+     */
 
-        int genreSize = transposed.getRowDimension();
+
+    public RealMatrix ColumnStochastic() {
 
         for (int i = 0; i < genreSize; i++) {
             RealVector forIter = transposed.getRowVector(i);
             double sum = forIter.getL1Norm();
-            RealVector stochasticRow = forIter.mapDivide(sum);
-            transposed.setRowVector(i, stochasticRow);
+            if (sum!=0){
+                forIter.mapDivideToSelf(sum);
+                transposed.setRowVector(i, forIter);
+            }
         }
 
         return transposed;
     }
 }
+

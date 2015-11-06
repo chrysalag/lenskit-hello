@@ -37,7 +37,6 @@ import org.lenskit.data.ratings.PreferenceDomain;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -91,11 +90,12 @@ public class HelloLenskit implements Runnable {
         // Next: load the LensKit algorithm configuration
         LenskitConfiguration config = null;
         try {
-            config = ConfigHelpers.load(new File("etc/item-item.groovy"));
+            config = ConfigHelpers.load(new File("etc/hir.groovy"));
         } catch (IOException e) {
             throw new RuntimeException("could not load configuration", e);
         }
         // Add our data component to the configuration
+
         config.addComponent(dao);
         config.bind(EventDAO.class).to(dao);
         config.bind(MapItemGenreDAO.class).to(genres);
@@ -114,12 +114,12 @@ public class HelloLenskit implements Runnable {
             // for users
             for (long user : users) {
                 // get 10 recommendation for the user
-                List<Result> recs = irec.recommendWithDetails(user, 20, null, null);
+                List<Result> recs = irec.recommendWithDetails(user, 10, null, null);
                 System.out.format("Recommendations for user %d:\n", user);
                 for (Result item : recs) {
                     String name = names.getItemName(item.getId());
-                    //System.out.format("\t%d (%s): %.2f\n", item.getId(), name, item.getScore());
-                    System.out.format("\t %s \n", name);
+                    System.out.format("\t%d (%s): %.10f\n", item.getId(), name, item.getScore());
+                    //System.out.format("\t %s \n", name);
                 }
             }
         }

@@ -27,6 +27,7 @@ import it.unimi.dsi.fastutil.longs.LongIterator;
 import it.unimi.dsi.fastutil.longs.LongIterators;
 import org.apache.commons.math3.linear.MatrixUtils;
 import org.apache.commons.math3.linear.RealMatrix;
+import org.apache.commons.math3.linear.RealVector;
 import org.grouplens.grapht.annotation.DefaultProvider;
 import org.grouplens.lenskit.vectors.ImmutableSparseVector;
 import org.grouplens.lenskit.vectors.MutableSparseVector;
@@ -38,19 +39,24 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Created by chrysalag. Implements the Model of HIR algorithm.
+ * A model for a {@link HIRItemScorer}.
+ * Stores calculated proximity values and number of co-rating users for each item pair.
  */
 
 @DefaultProvider(HIRModelBuilder.class)
 @Shareable
+@SuppressWarnings("deprecation")
 public class HIRModel implements Serializable {
 
-    private static final long serialVersionUID = 1L;
-    private final Long2ObjectMap<ImmutableSparseVector> cmatrix;
+    private static final long serialVersionUID  = 1L;
+
+    private final RealMatrix cmatrix;
+
     private final RealMatrix xmatrix;
+
     private final RealMatrix ymatrix;
 
-    public HIRModel(Long2ObjectMap<ImmutableSparseVector> cmatrix,
+    public HIRModel(RealMatrix cmatrix,
                     RealMatrix xmatrix,
                     RealMatrix ymatrix) {
         this.cmatrix = cmatrix;
@@ -58,30 +64,41 @@ public class HIRModel implements Serializable {
         this.ymatrix = ymatrix;
     }
 
-    public MutableSparseVector getCoratingsVector(long item) {
-        ImmutableSparseVector row = cmatrix.get(item);
-        return row.mutableCopy();
-    }
+    public MutableSparseVector getCoratingsVector(long item, Collection<Long> items) {
 
-    public MutableSparseVector getProximityVector(long item, Collection<Long> items) {
+        RealVector data = cmatrix.getRowVector((int) item);
 
-        double[] data = xmatrix.getRow((int) item);
-        RealMatrix row = MatrixUtils.createRowRealMatrix(data);
-        RealMatrix resM = ymatrix.preMultiply(row);
-
-        double[][] res = resM.getData();
-
-        Map<Long, Double> forRes = new HashMap<>();
+        Map<Long, Double> forResults = new HashMap<>();
 
         LongIterator iter = LongIterators.asLongIterator(items.iterator());
 
         int i = 0;
         while (iter.hasNext()) {
             final long meti = iter.nextLong();
-            forRes.put(meti, res[0][i]);
+            forResults.put(meti, data.getEntry(i));
             i++;
         }
 
-        return MutableSparseVector.create(forRes);
+        return MutableSparseVector.create(forResults);
+
+    }
+
+    public MutableSparseVector getProximityVector(long item, Collection<Long> items) {
+
+        RealVector data = xmatrix.getRowVector((int) item);
+        RealVector resM = ymatrix.preMultiply(data);
+
+        Map<Long, Double> forResults = new HashMap<>();
+
+        LongIterator iter = LongIterators.asLongIterator(items.iterator());
+
+        int i = 0;
+        while (iter.hasNext()) {
+            final long meti = iter.nextLong();
+            forResults.put(meti, resM.getEntry(i));
+            i++;
+        }
+
+        return MutableSparseVector.create(forResults);
     }
 }

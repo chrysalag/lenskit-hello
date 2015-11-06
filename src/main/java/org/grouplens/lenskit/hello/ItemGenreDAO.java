@@ -27,7 +27,6 @@ import org.apache.commons.math3.linear.RealVector;
 import javax.annotation.Nullable;
 
 /**
- * Created by chrysalag.
  * A DAO interface that provides access to item genres.
  * <p>
  * The normal way to get item names, without writing your own DAOs, is to use a

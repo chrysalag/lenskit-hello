@@ -12,15 +12,15 @@ import org.lenskit.baseline.UserMeanItemScorer
 // ... and configure the item scorer.  The bind and set methods
 // are what you use to do that. Here, we want an item-item scorer.
 bind ItemScorer to HIRItemScorer.class
-// Item-item works best with a minimum neighbor count
+
 set DirectAssociationParameter to 0.6
 set ProximityParameter to 0.3
 
 // let's use personalized mean rating as the baseline/fallback predictor.
 // 2-step process:
 // First, use the user mean rating as the baseline scorer
-bind (BaselineScorer, ItemScorer) to UserMeanItemScorer
+//bind (BaselineScorer, ItemScorer) to UserMeanItemScorer
 // Second, use the item mean rating as the base for user means
-bind (UserMeanBaseline, ItemScorer) to ItemMeanRatingItemScorer
+//bind (UserMeanBaseline, ItemScorer) to ItemMeanRatingItemScorer
 // and normalize ratings by baseline prior to computing similarities
-bind UserVectorNormalizer to BaselineSubtractingUserVectorNormalizer
+//bind UserVectorNormalizer to BaselineSubtractingUserVectorNormalizer

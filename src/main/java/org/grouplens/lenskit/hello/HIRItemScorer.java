@@ -22,7 +22,7 @@
 package org.grouplens.lenskit.hello;
 
 /**
- * Created by chrysalag. Implements the Item Scorer of HIR algorithm.
+ * An {@link org.lenskit.api.ItemScorer} that implements the HIR algorithm.
  */
 
 import org.grouplens.lenskit.data.history.RatingVectorUserHistorySummarizer;
@@ -51,13 +51,13 @@ import java.util.*;
  * An Item Scorer implements the HIR algorithm.
  */
 public class HIRItemScorer extends AbstractItemScorer {
+
     protected final UserEventDAO dao;
     protected final ItemDAO idao;
     protected HIRModel model;
     protected final PreferenceDomain domain;
     protected double directAssociation;
     protected double proximity;
-    private final UserVectorNormalizer normalizer;
 
     @Inject
     public HIRItemScorer(UserEventDAO dao,
@@ -65,21 +65,18 @@ public class HIRItemScorer extends AbstractItemScorer {
                          ItemDAO idao,
                          @Nullable PreferenceDomain dom,
                          @DirectAssociationParameter double direct,
-                         @ProximityParameter double prox,
-                         UserVectorNormalizer norm) {
+                         @ProximityParameter double prox) {
         this.dao = dao;
         this.model = model;
         this.idao = idao;
         domain = dom;
         directAssociation = direct;
         proximity = prox;
-        normalizer = norm;
     }
 
     @Nonnull
     @Override
     public ResultMap scoreWithDetails(long user, @Nonnull Collection<Long> items) {
-        //Set<Long> item = idao.getItemIds();
 
         UserHistory<Rating> history = dao.getEventsForUser(user, Rating.class);
 
@@ -89,58 +86,60 @@ public class HIRItemScorer extends AbstractItemScorer {
 
         SparseVector historyVector = RatingVectorUserHistorySummarizer.makeRatingVector(history);
 
-        MutableSparseVector historyVec = MutableSparseVector.create(idao.getItemIds());
-
-        normalizer.normalize(user, historyVector, historyVec);
-
         List<Result> results = new ArrayList<>();
+        List<Result> results1 = new ArrayList<>();
 
         MutableSparseVector preferenceVector = MutableSparseVector.create(idao.getItemIds(), 0);
-        MutableSparseVector coratingsVector;
-        MutableSparseVector proximityVector;
 
+        double total = 0.0;
         for (VectorEntry e: historyVector.fast()) {
             long key = e.getKey();
             double value = e.getValue();
             preferenceVector.set(key, value);
+            total = total + value;
         }
 
-        double preferenceInResults = 1 - directAssociation - proximity;
-        preferenceVector.multiply(preferenceInResults);
+        if (total != 0) {
+            preferenceVector.multiply(1/total);
+        }
+
+        final double preferenceInResults = 1 - directAssociation - proximity;
+        MutableSparseVector rankingVector = preferenceVector.copy();
+        rankingVector.multiply(preferenceInResults);
 
         for (VectorEntry e: preferenceVector.fast()) {
-            if (e.getValue() != 0) {
-                double prefValue = e.getValue();
-                long prefKey = e.getKey();
-                coratingsVector = model.getCoratingsVector(prefKey);
+            final double prefValue = e.getValue();
+            if (prefValue != 0) {
+                final long prefKey = e.getKey();
+                MutableSparseVector coratingsVector = model.getCoratingsVector(prefKey, items);
                 coratingsVector.multiply(directAssociation);
 
-                proximityVector = model.getProximityVector(prefKey, idao.getItemIds());
+                MutableSparseVector proximityVector = model.getProximityVector(prefKey, items);
                 proximityVector.multiply(proximity);
 
                 coratingsVector.add(proximityVector);
                 coratingsVector.multiply(prefValue);
 
-                preferenceVector.add(coratingsVector);
+                rankingVector.add(coratingsVector);
             }
         }
 
-        if (preferenceVector.sum() < 1.1 || preferenceVector.sum() > 0.9) {
-            for (VectorEntry e : preferenceVector.fast()) {
-                long key = e.getKey();
-                if (!historyVector.containsKey(key)) {
-                    results.add(Results.create(key, e.getValue()));
-                }
+        for (VectorEntry e: rankingVector.fast()) {
+            final long key = e.getKey();
+            if (!historyVector.containsKey(key)) {
+                results.add(Results.create(key, e.getValue()));
             }
         }
 
-        if (results.size() == (idao.getItemIds().size() - historyVector.size())) {
+        //if (rankingVector.sum() < 1.1 && rankingVector.sum() > 0.9) {
             return Results.newResultMap(results);
-        } else {
-            List<Result> result = new ArrayList<>();
-            return Results.newResultMap(result);
-        }
+        //} else {
+          //  return Results.newResultMap(results1);
+        //}
+
     }
 
-    public HIRModel getModel() { return model; }
+    public HIRModel getModel() {
+        return model;
+    }
 }

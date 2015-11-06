@@ -33,9 +33,17 @@ import javax.inject.Inject;
 import javax.inject.Provider;
 
 /**
- * Created by chrysalag. Provider of HIR Model.
+ * Pre-computes the number of mutual rating users for every pair
+ * of items and stores the results in a {@code DirectAssociationMatrix}.
+ * Provides this matrix and the matrices that factorize the {
+ * @code ProximityMatrix} to the model.
+ * These matrices are later used by a
+ * {@code HIRItemScorer}.
  */
+
+@SuppressWarnings("deprecation")
 public class HIRModelBuilder implements Provider<HIRModel> {
+
 
     private final DirectAssociationMatrix DAMatrix;
 
@@ -49,11 +57,16 @@ public class HIRModelBuilder implements Provider<HIRModel> {
     public HIRModelBuilder(@Transient @Nonnull ItemDAO dao,
                            @Transient @Nonnull ItemGenreDAO gDao,
                            @Transient ItemItemBuildContext context) {
+
         buildContext = context;
         DAMatrix = new DirectAssociationMatrix(dao);
         RSMatrix = new RowStochasticFactorOfProximity(dao, gDao);
         TFMatrix = new TransposedFactorOfProximity(dao, gDao);
     }
+
+    /**
+     * Constructs and returns a {@link HIRModel}.
+     */
 
     @Override
     public HIRModel get() {
@@ -73,3 +86,4 @@ public class HIRModelBuilder implements Provider<HIRModel> {
         return new HIRModel(DAMatrix.buildMatrix(), RSMatrix.RowStochastic(), TFMatrix.ColumnStochastic());
     }
 }
+
