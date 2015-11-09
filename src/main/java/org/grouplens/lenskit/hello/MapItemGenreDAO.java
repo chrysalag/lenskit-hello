@@ -48,9 +48,8 @@ import java.util.NoSuchElementException;
 /**
  * An item genre DAO backed by a map of item IDs to genres.
  *
- * @see org.grouplens.lenskit.hello.ItemGenreDAO
+ * @see org.lenskit.data.dao.ItemGenreDAO
  */
-
 
 public class MapItemGenreDAO implements ItemGenreDAO, ItemDAO, Serializable {
     private static final Logger logger = LoggerFactory.getLogger(MapItemGenreDAO.class);
@@ -78,6 +77,7 @@ public class MapItemGenreDAO implements ItemGenreDAO, ItemDAO, Serializable {
 
     @Override
     public int getGenreSize() { return genreSize; }
+
 
     /**
      * Read an item list DAO from a file with no header rows.
@@ -125,18 +125,14 @@ public class MapItemGenreDAO implements ItemGenreDAO, ItemDAO, Serializable {
             return new MapItemGenreDAO(genres.build());
         } catch (NoSuchElementException ex) {
             throw new IOException(String.format("%s:%s: not enough columns",
-                    file, stream.getLineNumber()),
-                    ex);
+                                                file, stream.getLineNumber()),
+                                  ex);
         } catch (NumberFormatException ex) {
             throw new IOException(String.format("%s:%s: id not an integer",
-                    file, stream.getLineNumber()),
-                    ex);
+                                                file, stream.getLineNumber()),
+                                  ex);
         } finally {
             stream.close();
         }
     }
-
-
-
-
 }

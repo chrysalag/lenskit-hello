@@ -29,6 +29,11 @@ import org.apache.commons.math3.linear.RealVector;
 import org.grouplens.lenskit.vectors.*;
 import org.lenskit.data.dao.ItemDAO;
 
+/**
+ * A matrix to store the direct inter-item relationships
+ * that derive from the number of their coratings.
+ */
+
 public class DirectAssociationMatrix {
 
     private RealMatrix workMatrix;
@@ -59,9 +64,9 @@ public class DirectAssociationMatrix {
     public void putItemPair(long id1, SparseVector itemVec1, long id2, SparseVector itemVec2) {
 
         if (id1 == id2) {
-            workMatrix.setEntry((int) id1, (int) id2, 0);
+            workMatrix.setEntry((int) id1, (int)id2, 0);
         } else {
-            int coratings = 0;
+            long coratings = 0;
             for (Pair<VectorEntry,VectorEntry> pair: Vectors.fastIntersect(itemVec1, itemVec2)) {
                 coratings++;
             }

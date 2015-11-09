@@ -29,8 +29,8 @@ import javax.annotation.Nullable;
 /**
  * A DAO interface that provides access to item genres.
  * <p>
- * The normal way to get item names, without writing your own DAOs, is to use a
- * {@link org.grouplens.lenskit.hello.MapItemGenreDAO}, often
+ * The normal way to get item names, without writing your own DAOs,
+ * is to use a {@link org.lenskit.data.dao.MapItemGenreDAO}, often
  * loaded from a CSV file:
  * </p>
  * <pre>{@code
@@ -38,12 +38,13 @@ import javax.annotation.Nullable;
  * set ItemFile to "item-genres.csv"
  * }</pre>
  * <p>
- * Note that, while {@link org.grouplens.lenskit.hello.MapItemGenreDAO} implements both this
+ * Note that, while {@link org.lenskit.data.dao.MapItemGenreDAO} implements both this
  * interface and {@link org.lenskit.data.dao.ItemDAO}, binding this interface to the
- * provider instead of the class means that the item name DAO will only be used to satisfy item name
- * DAO requests and not item list requests.
+ * provider instead of the class means that the item name DAO will only be used to
+ * satisfy item name DAO requests and not item list requests.
  * </p>
  */
+
 public interface ItemGenreDAO {
     /**
      * Get the genre for an item.

@@ -86,4 +86,3 @@ public class HIRModelBuilder implements Provider<HIRModel> {
         return new HIRModel(DAMatrix.buildMatrix(), RSMatrix.RowStochastic(), TFMatrix.ColumnStochastic());
     }
 }
-

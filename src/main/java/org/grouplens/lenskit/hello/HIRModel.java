@@ -43,6 +43,11 @@ import java.util.Map;
  * Stores calculated proximity values and number of co-rating users for each item pair.
  */
 
+/**
+ * A model for a {@link HIRItemScorer}.
+ * Stores calculated proximity values and number of co-rating users for each item pair.
+ */
+
 @DefaultProvider(HIRModelBuilder.class)
 @Shareable
 @SuppressWarnings("deprecation")

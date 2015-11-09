@@ -48,8 +48,9 @@ import javax.inject.Inject;
 import java.util.*;
 
 /**
- * An Item Scorer implements the HIR algorithm.
+ * An {@link ItemScorer} that implements the HIR algorithm.
  */
+
 public class HIRItemScorer extends AbstractItemScorer {
 
     protected final UserEventDAO dao;
@@ -87,16 +88,15 @@ public class HIRItemScorer extends AbstractItemScorer {
         SparseVector historyVector = RatingVectorUserHistorySummarizer.makeRatingVector(history);
 
         List<Result> results = new ArrayList<>();
-        List<Result> results1 = new ArrayList<>();
 
         MutableSparseVector preferenceVector = MutableSparseVector.create(idao.getItemIds(), 0);
 
         double total = 0.0;
         for (VectorEntry e: historyVector.fast()) {
-            long key = e.getKey();
-            double value = e.getValue();
+            final long key = e.getKey();
+            final double value = e.getValue();
             preferenceVector.set(key, value);
-            total = total + value;
+            total += value;
         }
 
         if (total != 0) {
@@ -131,11 +131,7 @@ public class HIRItemScorer extends AbstractItemScorer {
             }
         }
 
-        //if (rankingVector.sum() < 1.1 && rankingVector.sum() > 0.9) {
-            return Results.newResultMap(results);
-        //} else {
-          //  return Results.newResultMap(results1);
-        //}
+        return Results.newResultMap(results);
 
     }
 
