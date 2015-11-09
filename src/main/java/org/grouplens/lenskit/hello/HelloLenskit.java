@@ -101,25 +101,18 @@ public class HelloLenskit implements Runnable {
         config.bind(MapItemGenreDAO.class).to(genres);
         config.bind(PreferenceDomain.class).to(new PreferenceDomain(0, 1));
 
-        // Now that we have a configuration, build a recommender engine from the configuration
-        // and data source. This will compute the similarity matrix and return a recommender
-        // engine that uses it.
         LenskitRecommenderEngine engine = LenskitRecommenderEngine.build(config);
 
-        // Finally, get the recommender and use it.
         try (LenskitRecommender rec = engine.createRecommender()) {
-            // we want to recommend items
             ItemRecommender irec = rec.getItemRecommender();
-            assert irec != null; // not null because we configured one
-            // for users
+            assert irec != null;
             for (long user : users) {
                 // get 10 recommendation for the user
                 List<Result> recs = irec.recommendWithDetails(user, 10, null, null);
                 System.out.format("Recommendations for user %d:\n", user);
                 for (Result item : recs) {
                     String name = names.getItemName(item.getId());
-                    System.out.format("\t%d (%s): %.10f\n", item.getId(), name, item.getScore());
-                    //System.out.format("\t %s \n", name);
+                    System.out.format("\t %s \n", name);
                 }
             }
         }
